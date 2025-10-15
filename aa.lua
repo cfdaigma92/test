@@ -1,111 +1,27 @@
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
-
 local GamePlaceId = game.PlaceId
+
 local CHECK_INTERVAL = 1
-
--- List of known server JobIds you've already visited
 local visitedServers = {}
-local lastServerFile = "VisitedServers.json"
-
--- Try to load past server list from file (only works in executors / environments that allow writes)
-pcall(function()
-    if isfile and readfile and isfile(lastServerFile) then
-        visitedServers = HttpService:JSONDecode(readfile(lastServerFile))
-    end
-end)
-
-local function saveVisited()
-    pcall(function()
-        if writefile then
-            writefile(lastServerFile, HttpService:JSONEncode(visitedServers))
-        end
-    end)
-end
-
--- Fetches public servers via Roblox API
-local function findNewServer()
-    local cursor = ""
-    for _ = 1, 10 do -- Try a few pages
-        local url = string.format("https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&limit=100%s",
-            GamePlaceId,
-            cursor ~= "" and ("&cursor=" .. cursor) or ""
-        )
-
-        local success, response = pcall(function()
-            return HttpService:JSONDecode(game:HttpGet(url))
-        end)
-        if not success then return nil end
-
-        if response and response.data then
-            for _, server in ipairs(response.data) do
-                if type(server) == "table"
-                    and server.id ~= game.JobId
-                    and not table.find(visitedServers, server.id)
-                    and server.playing < server.maxPlayers then
-                    table.insert(visitedServers, server.id)
-                    saveVisited()
-                    return server.id
-                end
-            end
-        end
-
-        if not response.nextPageCursor then
-            break
-        else
-            cursor = "&cursor=" .. response.nextPageCursor
-        end
-    end
-    return nil
-end
+local cursor = nil
 
 local SECRETS = {
-    "La Grande Combinasion",
-    "Garama and Madundung",
-    "Nuclearo Dinossauro",
-    "Chicleteira Bicicleteira",
-    "Los Combinasionas",
-    "Burguro And Fryuro",
-    "Los 67",
-    "Dragon Cannelloni",
-    "Chillin Chilli",
-    "Secret Lucky Block",
-    "Los Hotspotsitos",
-    "La Secret Combinasion",
-    "Esok Sekolah",
-    "La Supreme Combinasion",
-    "Spaghetti Tualetti",
-    "Chimpanzini Spiderini",
-    "Los Mobilis",
-    "Los Bros",
-    "67",
-    "Chillin Chilli",
-    "Fragola La La La",
-    "Tralaledon",
-    "La Spooky Grande",
-    "Eviledon",
-    "Ketchuru and Musturu",
-    "Las Sis",
-    "Spooky and Pumpky",
-    "Los Chicleteiras",
-    "Celularcini Viciosini",
-    "Tralaledon",
-    "Ketupat Kepat",
-    "Tacorita Bicicleta",
-    "Mariachi Corazoni",
-    "Money Money Puggy",
-    "Tang Tang Kelentang",
-    "Los Tacoritas",
-    "Tictac Sahur",
-    "Ketupat Kepat",
-    "La Extinct Grande",
-    "Los Nooo My Hotspotsitos"
+    "La Grande Combinasion", "Garama and Madundung", "Nuclearo Dinossauro", "Chicleteira Bicicleteira",
+    "Los Combinasionas", "Burguro And Fryuro", "Los 67", "Dragon Cannelloni", "Chillin Chilli",
+    "Secret Lucky Block", "Los Hotspotsitos", "La Secret Combinasion", "Esok Sekolah", "La Supreme Combinasion",
+    "Spaghetti Tualetti", "Chimpanzini Spiderini", "Los Mobilis", "Los Bros", "67", "Chillin Chilli",
+    "Fragola La La La", "Tralaledon", "La Spooky Grande", "Eviledon", "Ketchuru and Musturu", "Las Sis",
+    "Spooky and Pumpky", "Los Chicleteiras", "Celularcini Viciosini", "Tralaledon", "Ketupat Kepat",
+    "Tacorita Bicicleta", "Mariachi Corazoni", "Money Money Puggy", "Tang Tang Kelentang", "Los Tacoritas",
+    "Tictac Sahur", "Ketupat Kepat", "La Extinct Grande", "Los Nooo My Hotspotsitos"
 }
 
--- Highlight function (same as before)
+-- Function to apply highlight and label to the secret object
 local function applyHighlightAndLabel(secretObj)
     if secretObj:FindFirstChild("SecretLabel") or secretObj:FindFirstChildWhichIsA("Highlight") then return end
+
     local highlight = Instance.new("Highlight")
     highlight.Adornee = secretObj
     highlight.FillColor = Color3.fromRGB(255, 0, 0)
@@ -137,25 +53,52 @@ end
 
 -- Detect secrets
 local function detectSecrets()
+    local foundAny = false
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") and table.find(SECRETS, obj.Name) then
             print("🐾 Secret Found: " .. obj.Name)
             applyHighlightAndLabel(obj)
-            return true
+            foundAny = true
         end
     end
-    return false
+    return foundAny
 end
 
--- Hop function using server list
+-- Get a new random server that hasn’t been joined
+local function getNewServer()
+    local url = "https://games.roblox.com/v1/games/" .. GamePlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+    if cursor then
+        url = url .. "&cursor=" .. cursor
+    end
+
+    local success, data = pcall(function()
+        return HttpService:JSONDecode(game:HttpGet(url))
+    end)
+    if not success then
+        warn("Failed to get server list")
+        return nil
+    end
+
+    for _, server in ipairs(data.data) do
+        if server.playing < server.maxPlayers and server.id ~= game.JobId and not table.find(visitedServers, server.id) then
+            table.insert(visitedServers, server.id)
+            return server.id
+        end
+    end
+
+    cursor = data.nextPageCursor
+    return nil
+end
+
+-- Teleport to a different server
 local function hopServer()
-    print("🔄 No secrets found. Searching for a new server...")
-    local newServer = findNewServer()
+    print("🔄 No secrets found. Hopping servers...")
+    local newServer = getNewServer()
     if newServer then
-        print("✨ Found new server:", newServer)
+        print("🌎 Teleporting to new server:", newServer)
         TeleportService:TeleportToPlaceInstance(GamePlaceId, newServer)
     else
-        warn("⚠️ No new servers found, retrying soon.")
+        print("⚠️ Could not find a new server. Trying again soon.")
     end
 end
 
