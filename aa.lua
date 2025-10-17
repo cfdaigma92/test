@@ -12,7 +12,6 @@ local SECRETS = {
     "Garama and Madundung", 
     "Nuclearo Dinossauro",
     "Chicleteira Bicicleteira",
-    "Los Tralaleritos",
     "Los Combinasionas",
     "Burguro And Fryuro",
     "Los 67",
