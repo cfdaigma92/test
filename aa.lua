@@ -1,11 +1,7 @@
---// 🧩 Secret Finder + Safe Server Hopper
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
-local Workspace = game:GetService("Workspace")
-
-local LOCAL_PLAYER = Players.LocalPlayer
-local PLACE_ID = game.PlaceId
+local GamePlaceId = game.PlaceId
 
 local CHECK_INTERVAL = 1
 local visitedServers = {}
@@ -55,13 +51,9 @@ local SECRETS = {
     "Los Nooo My Hotspotsitos"
 }
 
------------------------------------------------------------
--- 🧭 Apply highlight + label to found secrets
------------------------------------------------------------
+-- Function to apply highlight and label to the secret object
 local function applyHighlightAndLabel(secretObj)
-    if secretObj:FindFirstChild("SecretLabel") or secretObj:FindFirstChildWhichIsA("Highlight") then
-        return
-    end
+    if secretObj:FindFirstChild("SecretLabel") or secretObj:FindFirstChildWhichIsA("Highlight") then return end
 
     local highlight = Instance.new("Highlight")
     highlight.Adornee = secretObj
@@ -92,12 +84,10 @@ local function applyHighlightAndLabel(secretObj)
     textLabel.Parent = billboard
 end
 
------------------------------------------------------------
--- 🔎 Detect secrets in workspace
------------------------------------------------------------
+-- Detect secrets
 local function detectSecrets()
     local foundAny = false
-    for _, obj in pairs(Workspace:GetDescendants()) do
+    for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") and table.find(SECRETS, obj.Name) then
             print("🐾 Secret Found: " .. obj.Name)
             applyHighlightAndLabel(obj)
@@ -107,21 +97,50 @@ local function detectSecrets()
     return foundAny
 end
 
------------------------------------------------------------
--- 🌎 Get new public server to teleport into
------------------------------------------------------------
+-- Get a new random server that hasn’t been joined
 local function getNewServer()
-    local url = ("https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&limit=100"):format(PLACE_ID)
+    local url = "https://games.roblox.com/v1/games/" .. GamePlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
     if cursor then
-        url ..= "&cursor=" .. cursor
+        url = url .. "&cursor=" .. cursor
     end
 
-    local success, response = pcall(function()
+    local success, data = pcall(function()
         return HttpService:JSONDecode(game:HttpGet(url))
     end)
-    if not success or not response or not response.data then
-        warn("[ServerHop] Failed to fetch server list.")
+    if not success then
+        warn("Failed to get server list")
         return nil
     end
 
-    for _, server in_
+    for _, server in ipairs(data.data) do
+        if server.playing < server.maxPlayers and server.id ~= game.JobId and not table.find(visitedServers, server.id) then
+            table.insert(visitedServers, server.id)
+            return server.id
+        end
+    end
+
+    cursor = data.nextPageCursor
+    return nil
+end
+
+-- Teleport to a different server
+local function hopServer()
+    print("🔄 No secrets found. Hopping servers...")
+    local newServer = getNewServer()
+    if newServer then
+        print("🌎 Teleporting to new server:", newServer)
+        TeleportService:TeleportToPlaceInstance(GamePlaceId, newServer)
+    else
+        print("⚠️ Could not find a new server. Trying again soon.")
+    end
+end
+
+-- Main loop
+while true do
+    if detectSecrets() then
+        break
+    else
+        task.wait(CHECK_INTERVAL)
+        hopServer()
+    end
+end
