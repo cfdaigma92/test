@@ -1,59 +1,76 @@
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
-local HttpService = game:GetService("HttpService")
 local GamePlaceId = game.PlaceId
 
 local CHECK_INTERVAL = 1
-local visitedServers = {}
-local cursor = nil
+
 
 local SECRETS = {
-    "La Grande Combinasion",
-    "Garama and Madundung", 
-    "Nuclearo Dinossauro",
-    "Mieteteira Bicicleteira",
+    "Lavadorito Spinito",
+    "Cooki and Milki",
+    "Orcaledon",
+    "Gingerat Gerat",
+    "W or L",
+    "La Ginger Sekolah",
+    "Gobblino Uniciclino",
+    "Fishino Clownino",
+    "Fragrama and Chocrama",
+    "La Taco Combinasion",
+    "Festive 67",
+    "Garama and Madundung",
     "Chicleteira Bicicleteira",
+    "Mieteteira Bicicleteira",
     "Chicleteirina Bicicleteirina",
-    "Los Combinasionas",
-    "Burguro And Fryuro",
+    "Chipso and Queso",
+    "Fragrama and Chocrama",
+    "Los Spaghettis",
+    "Los Puggies",
+    "La Casa Boo",
+    "La Taco Combinasion",
+    "Los Primos",
+    "Spooky and Pumpky",
+    "Headless Horseman",
+    "Eviledon",
+    "Chipso and Queso",
+    "Capitano Moby",
     "Los 67",
     "Dragon Cannelloni",
-    "Chillin Chili",
+    "Chillin Chilli",
     "Secret Lucky Block",
-    "Los Hotspotsitos",
-    "La Secret Combinasion", 
+    "La Secret Combinasion",
     "Esok Sekolah",
     "La Supreme Combinasion",
     "Spaghetti Tualetti",
     "Chimpanzini Spiderini",
-    "Los Mobilis", 
+    "Los Mobilis",
     "Los Bros",
-    "67", 
-    "Fragola La La La", 
-    "Tralaledon", 
-    "La Spooky Grande", 
-    "Eviledon", 
-    "Ketchuru and Musturu", 
+    "67",
+    "Chillin Chilli",
+    "Fragola La La La",
+    "La Spooky Grande",
+    "Eviledon",
     "Las Sis",
     "Spooky and Pumpky",
-    "Los Chicleteiras", 
-    "Celularcini Viciosini", 
-    "Tralaledon", 
+    "Los Chicleteiras",
+    "Celularcini Viciosini",
+    "Tralaledon",
     "Ketupat Kepat",
     "Tacorita Bicicleta",
-    "Mariachi Corazoni", 
+    "Mariachi Corazoni",
     "Money Money Puggy",
-    "Tang Tang Keletang", 
+    "Tang Tang Keletang",
     "Los Tacoritas",
-    "Tictac Sahur", 
+    "Tictac Sahur",
     "Ketupat Kepat",
-    "La Extinct Grande", 
-    "Los Nooo My Hotspotsitos"
+    "La Extinct Grande"
+    
 }
 
 -- Function to apply highlight and label to the secret object
 local function applyHighlightAndLabel(secretObj)
-    if secretObj:FindFirstChild("SecretLabel") or secretObj:FindFirstChildWhichIsA("Highlight") then return end
+    if secretObj:FindFirstChild("SecretLabel") or secretObj:FindFirstChildWhichIsA("Highlight") then
+        return
+    end
 
     local highlight = Instance.new("Highlight")
     highlight.Adornee = secretObj
@@ -62,8 +79,11 @@ local function applyHighlightAndLabel(secretObj)
     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     highlight.Parent = secretObj
 
-    local referencePart = secretObj:FindFirstChild("Head") or secretObj.PrimaryPart or secretObj:FindFirstChildWhichIsA("BasePart")
-    if not referencePart then return end
+    local referencePart = secretObj:FindFirstChild("Head") or secretObj.PrimaryPart
+    if not referencePart then
+        referencePart = secretObj:FindFirstChildWhichIsA("BasePart")
+        if not referencePart then return end
+    end
 
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "SecretLabel"
@@ -84,7 +104,7 @@ local function applyHighlightAndLabel(secretObj)
     textLabel.Parent = billboard
 end
 
--- Detect secrets
+-- Function to detect secrets in workspace
 local function detectSecrets()
     local foundAny = false
     for _, obj in pairs(workspace:GetDescendants()) do
@@ -97,42 +117,10 @@ local function detectSecrets()
     return foundAny
 end
 
--- Get a new random server that hasn’t been joined
-local function getNewServer()
-    local url = "https://games.roblox.com/v1/games/" .. GamePlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-    if cursor then
-        url = url .. "&cursor=" .. cursor
-    end
-
-    local success, data = pcall(function()
-        return HttpService:JSONDecode(game:HttpGet(url))
-    end)
-    if not success then
-        warn("Failed to get server list")
-        return nil
-    end
-
-    for _, server in ipairs(data.data) do
-        if server.playing < server.maxPlayers and server.id ~= game.JobId and not table.find(visitedServers, server.id) then
-            table.insert(visitedServers, server.id)
-            return server.id
-        end
-    end
-
-    cursor = data.nextPageCursor
-    return nil
-end
-
--- Teleport to a different server
+-- Function to teleport to another server
 local function hopServer()
     print("🔄 No secrets found. Hopping servers...")
-    local newServer = getNewServer()
-    if newServer then
-        print("🌎 Teleporting to new server:", newServer)
-        TeleportService:TeleportToPlaceInstance(GamePlaceId, newServer)
-    else
-        print("⚠️ Could not find a new server. Trying again soon.")
-    end
+    TeleportService:Teleport(GamePlaceId)
 end
 
 -- Main loop
