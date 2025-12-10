@@ -53,7 +53,6 @@ local SECRETS = {
     "Spooky and Pumpky",
     "Los Chicleteiras",
     "Celularcini Viciosini",
-    "Tralaledon",
     "Ketupat Kepat",
     "Tacorita Bicicleta",
     "Mariachi Corazoni",
