@@ -48,7 +48,6 @@ local SECRETS = {
     "Chillin Chilli",
     "Fragola La La La",
     "La Spooky Grande",
-    "Eviledon",
     "Las Sis",
     "Spooky and Pumpky",
     "Los Chicleteiras",
@@ -62,7 +61,6 @@ local SECRETS = {
     "Tictac Sahur",
     "Ketupat Kepat",
     "La Extinct Grande"
-    
 }
 
 -- Function to apply highlight and label to the secret object
