@@ -8,7 +8,6 @@ local CHECK_INTERVAL = 1
 local SECRETS = {
     "Lavadorito Spinito",
     "Cooki and Milki",
-    "Orcaledon",
     "Gingerat Gerat",
     "W or L",
     "La Ginger Sekolah",
@@ -30,7 +29,6 @@ local SECRETS = {
     "Los Primos",
     "Spooky and Pumpky",
     "Headless Horseman",
-    "Eviledon",
     "Chipso and Queso",
     "Capitano Moby",
     "Los 67",
