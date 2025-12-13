@@ -11,6 +11,7 @@ local SECRETS = {
     "Gingerat Gerat",
     "W or L",
     "La Ginger Sekolah",
+    "Orcaledon",
     "Gobblino Uniciclino",
     "Fishino Clownino",
     "Fragrama and Chocrama",
