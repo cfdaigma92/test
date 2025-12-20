@@ -8,6 +8,8 @@ local CHECK_INTERVAL = 1
 local SECRETS = {
     "Lavadorito Spinito",
     "Cooki and Milki",
+    "Swag Soda",
+    "Los 25",
     "Gingerat Gerat",
     "W or L",
     "La Ginger Sekolah",
